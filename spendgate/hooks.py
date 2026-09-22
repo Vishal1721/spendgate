@@ -5,6 +5,30 @@ app_description = "evaluation"
 app_email = "vishalramesh1721@gmail.com"
 app_license = "mit"
 
+
+fixtures =[
+    "Department",
+    {
+        "dt":"Role",
+        "filters":[
+            ["name","in",[
+                "Staff",
+                "department Head",
+                "Financial Manager"
+            ]]
+        ]
+    },
+    {
+        "dt":"Custom DocPerm",
+        "filters":[
+            ["role","in",[
+                "Staff",
+                "department Head",
+                "Financial Manager"
+            ]]
+        ]
+    }
+]
 # Apps
 # ------------------
 

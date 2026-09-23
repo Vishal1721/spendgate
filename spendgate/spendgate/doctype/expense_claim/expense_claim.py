@@ -8,27 +8,81 @@ from frappe.model.document import Document
 class ExpenseClaim(Document):
     def validate(self):
         self.expense_validate()
-
+    
     def before_submit(self):
-    	total_Amount =0
-        doc = frappe.get_all('Expense Claim',filters={"docstatus":1},fields=["amount"])
 
-    	for row in doc:
-            total_amount += row.amount
+        spent_so_far = frappe.db.sql(
+            """
+            SELECT COALESCE(SUM(total_amount), 0)
+            FROM `tabExpense Claim`
+            WHERE budget = %s
+            AND docstatus = 1
+            AND name != %s
+            """,
+            (self.budget, self.name))[0][0]
 
-        budget_amount = frappe.get_value('Budget',self.budget,total_allocated)
-        if  self.total_amount > budget_amount:
-            
+        budget_amount = frappe.db.get_value(
+            "Budget",self.budget,"total_allocated"
+        )
+
+        spend = spent_so_far + self.total_amount
+
+        if spend > budget_amount:
+            overage = spend - budget_amount
+            remaining = budget_amount - spent_so_far
+            department = frappe.db.get_value(
+                "Budget",self.budget,"department"
+            )
+            frappe.throw(
+                f"{department} budget exceeded by ₹{overage}. "
+                f"Remaining budget:₹{remaining}."
+            )
+
+    def on_submit(self):
+        spent_so_far = frappe.db.sql(
+            """
+            SELECT COALESCE(SUM(total_amount), 0)
+            FROM `tabExpense Claim`
+            WHERE budget = %s
+            AND docstatus = 1
+            AND name != %s
+            """,
+            (self.budget, self.name))[0][0]
+
+        budget_amount = frappe.db.get_value("Budget",self.budget,"total_allocated")
+        self.remaining_budget_at_submission = budget_amount - spent_so_far
+        if not self.approved_by:
+            self.approved_by = frappe.session.user
+        self.db_set({
+            "remaining_budget_at_submission":self.remaining_budget_at_submission,
+            "approved_by":self.approved_by
+        })
+        self.db_set("status", "Pending Approval")
+        frappe.enqueue(
+            "spendgate.notification.notify_finance_of_new_claim", 
+            queue="default",
+            is_async=True,
+            now=False,
+            job_name=None,
+        )
+
+    def on_cancel(self):
+        if self.status == "Reimbursed":
+            frappe.throw("Reimbursed Expense Claims cannot be cancelled.")
+        self.db_set("status", "Cancelled")
+
+    def on_trash(self):
+        if self.status not in ("Cancelled","Draft"):
+            frappe.throw('Delete will mot be allowed for status cancelled or draft')
 
     def expense_validate(self):
-        doc = frappe.get_doc('Expense Claim',self.name)
         total_amount = 0
-        for row in doc.expense_line:
+        for row in self.expense_line:
             if row.amount <= 0:
                 frappe.throw('Amount must be greater than zero')
             total_amount += row.amount
         
-
+        self.total_amount = total_amount
         department = frappe.get_value('Budget',self.budget,'department')
 
         if department != self.department:

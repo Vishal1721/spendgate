@@ -5,6 +5,15 @@ app_description = "evaluation"
 app_email = "vishalramesh1721@gmail.com"
 app_license = "mit"
 
+after_install = "spendgate.install.py" 
+
+# doc_events = {
+#     "*": {
+#         "on_update": "spendgate.audit.log_change",
+#         "on_submit": "spendgate.audit.log_change",
+#         "on_cancel": "spendgate.audit.log_change",
+#     }
+# }
 
 fixtures =[
     "Department",

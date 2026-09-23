@@ -43,7 +43,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-22 15:21:31.902438",
+ "modified": "2026-09-23 10:50:48.640433",
  "modified_by": "Administrator",
  "module": "Spendgate",
  "name": "Vendor",
@@ -67,5 +67,6 @@
  "rows_threshold_for_grid_search": 20,
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "vendor_name"
 }

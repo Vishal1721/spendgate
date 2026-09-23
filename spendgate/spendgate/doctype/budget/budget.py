@@ -8,7 +8,7 @@ from frappe.model.document import Document
 class Budget(Document):
     def validate(self):
         if self.total_allocated <=0:
-            frappe.throw("Amount should be greater than 0")
+            frappe.throw("Total Allocated must be greater than 0")
         
     def before_insert(self):
         doc = frappe.db.exists("Budget",
@@ -19,5 +19,7 @@ class Budget(Document):
         })
 
         if doc:
-            frappe.throw("Budget is already exists")
+            frappe.throw(
+            f"Budget already exists for {self.department}, "
+            f"{self.fiscal_year} {self.fiscal_quarter}")
         

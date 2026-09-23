@@ -1,0 +1,41 @@
+{
+ "add_total_row": 0,
+ "add_translate_data": 0,
+ "columns": [],
+ "creation": "2026-09-23 15:20:45.362523",
+ "disable_prepared_report_automation": 0,
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "doctype_to_sync": [],
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letter_head": null,
+ "modified": "2026-09-23 18:10:26.573542",
+ "modified_by": "Administrator",
+ "module": "Spendgate",
+ "name": "Pending Approvals",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "query": "SELECT name,employee,department,total_amount,expense_date\r\nFROM `tabExpense Claim`\r\nWHERE status = 'Pending Approval'\r\n",
+ "ref_doctype": "Expense Claim",
+ "report_name": "Pending Approvals",
+ "report_type": "Query Report",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Staff"
+  },
+  {
+   "role": "Department Head"
+  },
+  {
+   "role": "Finance Manager"
+  }
+ ],
+ "snapshot_report": 0,
+ "timeout": 0
+}

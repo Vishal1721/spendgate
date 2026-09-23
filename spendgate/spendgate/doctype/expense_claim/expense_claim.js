@@ -69,7 +69,7 @@ frappe.ui.form.on("Expense Claim", {
 });
 frappe.ui.form.on("Expense Claim", {
     refresh(frm) {
-     if(frm.doc.status=="Pending Approval" && (frappe.user.has_role('Department Head')|| frappe.user.has_role('Adminsitrator') ||
+     if(frm.doc.status=="Pending Approval" && (frappe.user.has_role('Department Head')|| frappe.user.has_role('Administrator') ||
             frappe.user.has_role('Finance Manager'))) {
                 frm.add_custom_button("Reject Claim", ()=>{
                     let d = new frappe.ui.Dialog({
@@ -86,22 +86,20 @@ frappe.ui.form.on("Expense Claim", {
                     primary_action_label: 'Reject',
                     primary_action(values) {
                         frm.call( {
-                             method: "spendgate.api.reject_claim",
+                             method:"spendgate.api.reject_claim",
                                 args: {
                                     claim: frm.doc.name,
                                     reason: values.rejection_reason
                                 },
                                 callback() {
-                                    dialog.hide();
+                                    d.hide();
                                     frm.reload_doc();
                                 }
                         })
                         d.hide();
                     }
                 });
-
                 d.show();
-
                 })
         }
     }
@@ -109,7 +107,7 @@ frappe.ui.form.on("Expense Claim", {
 
 frappe.ui.form.on("Expense Claim", {
     refresh(frm) {
-        if(frm.doc.status=="Pending Approval" && (frappe.user.has_role('Adminsitrator') ||
+        if(frm.doc.status=="Pending Approval" && (frappe.user.has_role('Administrator') ||
             frappe.user.has_role('Finance Manager'))) {
         frm.add_custom_button("Reassign Department", () => {
             frappe.prompt(
@@ -154,3 +152,86 @@ frappe.ui.form.on("Expense Claim", {
     }
     }
 });
+
+
+frappe.ui.form.on("Expense Line", {
+    amount(frm, cdt, cdn) {
+        console.log("Amount changed");
+
+        calculate_total_amount(frm);
+        check_remaining_budget(frm);
+    }
+});
+
+
+function get_expense_lines(frm) {
+    let expense_lines = [];
+
+    for (const fieldname in frm.doc) {
+        const value = frm.doc[fieldname];
+
+        if (Array.isArray(value)) {
+            const rows = value.filter(row => {
+                return row.doctype === "Expense Line";
+            });
+
+            if (rows.length) {
+                expense_lines = rows;
+                break;
+            }
+        }
+    }
+
+    return expense_lines;
+}
+
+
+function calculate_total_amount(frm) {
+    const expense_lines = get_expense_lines(frm);
+    let total = 0;
+    expense_lines.forEach(row => {
+        total += flt(row.amount);
+    });
+
+    console.log("Expense Lines:", expense_lines);
+    console.log("Calculated total:", total);
+
+    frm.set_value("total_amount", total);
+}
+
+
+function check_remaining_budget(frm) {
+    const expense_lines = get_expense_lines(frm);
+
+    let running_total = 0;
+
+    expense_lines.forEach(row => {
+        running_total += flt(row.amount);
+    });
+    if (!frm.doc.budget) {
+        console.log("No budget selected");
+        return;
+    }
+
+    frappe.db.get_value("Budget",frm.doc.budget,"total_allocated"
+    ).then(r => {
+        const remaining_budget = flt(r.message.total_allocated);
+        console.log("Running total:", running_total);
+        console.log("Remaining budget:", remaining_budget);
+        
+        if (running_total > remaining_budget) {
+            frappe.msgprint({
+                title: ("Budget Exceeded"),
+                message: (
+                    "The total expense amount ({0}) exceeds the allocated budget ({1}).",
+                    [
+                        format_currency(running_total),
+                        format_currency(remaining_budget)
+                    ]
+                ),
+                indicator: "red"
+            });
+        }
+      
+    });
+}

@@ -97,6 +97,7 @@ def reject_claim(claim,reason):
     doc = frappe.get_doc('Expense Claim',claim)
     doc.status = "Rejected"
     # doc.rejection_reason = reason
+    doc.docstatus = 2
     doc.save()
     frappe.db.commit()
 
@@ -109,14 +110,73 @@ def reject_claim(claim,reason):
 def reassign_department(claim,department):
     if not claim:
         frappe.throw("Claim not exists")
-    if not reason:
+    if not department:
         frappe.throw("Department not exists")
 
     doc = frappe.get_doc('Expense Claim',claim)
-    doc.department = department 
+    doc.department = department
+    
     doc.save()
-     return {
+    return {
         "success": True,
         "message": "Department reassigned successfully",
         "department": department
     }
+
+# //get_all
+@frappe.whitelist()
+def unsafe_get_expense_claims():
+    claims = frappe.get_all(
+        "Expense Claim",
+        fields="*"
+    )
+
+    for claim in claims:
+        claim["expense_lines"] = frappe.get_all(
+            "Expense Line",
+            filters={
+                "parent": claim["name"]
+            },
+            fields="*"
+        )
+
+    return claims
+
+# //get_list
+@frappe.whitelist()
+def safe_get_expense_claims():
+    claims = frappe.get_list("Expense Claims",
+    fields = ["name", "employee" , "department" , "total_amount" , "expense_date", "status"])
+
+    user_department = frappe.db.get_value(
+        "Department",
+        {"department_head": frappe.session.user},
+        "name"
+    )
+    for claim in claims:
+        if claim.department == user_department:
+            claim["expense_lines"] = frappe.get_list(
+                "Expense Line",
+                filters={
+                    "parent": claim.name
+                },
+                fields=[
+                    "expense_category",
+                    "description",
+                    "amount"
+                ]
+            )
+
+        else:
+            claim["expense_lines"] = frappe.get_list(
+                "Expense Line",
+                filters={
+                    "parent": claim.name
+                },
+                fields=[
+                    "expense_category",
+                    "description"
+                ]
+            )
+
+    return claims

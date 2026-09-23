@@ -15,6 +15,9 @@ after_install = "spendgate.install.py"
 #     }
 # }
 
+permission_query_conditions = {
+    "Expense Claim" : "spendgate.permissions.expense_claim_query"
+}
 fixtures =[
     "Department",
     {

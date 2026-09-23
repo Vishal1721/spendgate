@@ -46,6 +46,7 @@
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "department",
    "fieldtype": "Link",
    "label": "Department",
@@ -122,7 +123,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-09-23 11:43:15.667276",
+ "modified": "2026-09-23 16:30:46.229964",
  "modified_by": "Administrator",
  "module": "Spendgate",
  "name": "Expense Claim",

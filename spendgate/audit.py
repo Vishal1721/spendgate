@@ -1,6 +1,8 @@
 
 import frappe
 def log_change(doc,method=None):
+    if doc.doctype == "Audit Log":
+        return
     doc = frappe.get_doc(
         {
             "doctype": "Audit Log",
@@ -12,3 +14,4 @@ def log_change(doc,method=None):
         }
     )
     doc.insert(ignore_permissions=True)
+

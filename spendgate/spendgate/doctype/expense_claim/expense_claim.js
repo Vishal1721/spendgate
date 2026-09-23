@@ -188,12 +188,13 @@ function get_expense_lines(frm) {
 
 function calculate_total_amount(frm) {
     const expense_lines = get_expense_lines(frm);
+
     let total = 0;
+
     expense_lines.forEach(row => {
         total += flt(row.amount);
     });
 
-    console.log("Expense Lines:", expense_lines);
     console.log("Calculated total:", total);
 
     frm.set_value("total_amount", total);
@@ -208,30 +209,77 @@ function check_remaining_budget(frm) {
     expense_lines.forEach(row => {
         running_total += flt(row.amount);
     });
+
     if (!frm.doc.budget) {
         console.log("No budget selected");
         return;
     }
 
-    frappe.db.get_value("Budget",frm.doc.budget,"total_allocated"
+    frappe.db.get_value(
+        "Budget",
+        frm.doc.budget,
+        "total_allocated"
     ).then(r => {
-        const remaining_budget = flt(r.message.total_allocated);
+
+        const allocated_budget = flt(r.message.total_allocated);
+
         console.log("Running total:", running_total);
-        console.log("Remaining budget:", remaining_budget);
-        
-        if (running_total > remaining_budget) {
+        console.log("Allocated budget:", allocated_budget);
+
+        if (running_total > allocated_budget) {
             frappe.msgprint({
-                title: ("Budget Exceeded"),
-                message: (
+                title: __("Budget Exceeded"),
+                message: __(
                     "The total expense amount ({0}) exceeds the allocated budget ({1}).",
                     [
                         format_currency(running_total),
-                        format_currency(remaining_budget)
+                        format_currency(allocated_budget)
                     ]
                 ),
                 indicator: "red"
             });
         }
-      
     });
 }
+frappe.ui.form.on("Expense Claim", {
+    refresh(frm) {
+        
+       if(frm.doc.status == "Draft") {
+            frm.dashboard.add_indicator("Draft", "orange");
+        }
+        else if (frm.doc.status == "Pending Approval") {
+            frm.dashboard.add_indicator("Pending Approval", "blue");
+        }
+        else if (frm.doc.status == "Approved") {
+            frm.dashboard.add_indicator("Approved", "green");
+        }
+        else if (frm.doc.status == "Rejected") {
+            frm.dashboard.add_indicator("Rejected", "red");
+        }
+        else if (frm.doc.status == "Reimbursed") {
+            frm.dashboard.add_indicator("Reimbursed", "green");
+        }
+        else if (frm.doc.status == "Cancelled") {
+            frm.dashboard.add_indicator("Cancelled", "red");
+        }
+
+        if (frm.doc.budget) {
+
+            frappe.call({
+                method: "spendgate.api.get_budget_status",
+                args: {
+                    budget: frm.doc.budget
+                },
+                callback: function(r) {
+                    if (r.message) {
+                        let remaining = r.message.remaining;
+                        frm.dashboard.add_indicator(
+                            `Budget Remaining: ₹${remaining}`,
+                            remaining <= 0 ? "red" : "green"
+                        );
+                    }
+                }
+            });
+        }
+    }
+})

@@ -180,3 +180,30 @@ def safe_get_expense_claims():
             )
 
     return claims
+
+
+@frappe.whitelist()
+def get_budget_status(budget):
+    if not budget:
+        frappe.throw("Buget is none")
+    
+    total_allocated = frappe.db.get_value('Budget',budget,'total_allocated')
+    if total_allocated is None:
+        frappe.throw("total_allocated not exists")
+    
+    spent = frappe.db.sql(
+        """
+        SELECT COALESCE(SUM(total_amount), 0)
+        FROM `tabExpense Claim`
+        WHERE budget = %s
+          AND docstatus = 1
+        """,
+        (budget,)
+    )[0][0]
+
+    remaining = total_allocated - spent
+
+    return {
+        "remaining":remaining
+    }
+

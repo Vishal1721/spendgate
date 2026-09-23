@@ -90,3 +90,27 @@ The client-side `validate` event is expected to finish the validation process sy
 Async data should  be fetched in events such as onload or refresh, where the data can be retrieved before the user submits the document.
 
 fetch the data by async and validate it.
+
+
+6.In README_internals.md: show the f-string version side by side with the parameterized version, and explain why the latter is always preferred.
+
+### F-string version
+
+python
+department = filters.get("department")
+
+query = f"""
+    SELECT
+        name,
+        employee,
+        department,
+        total_amount,
+        expense_date
+    FROM `tabExpense Claim`
+    WHERE status = 'Pending Approval'
+"""
+
+if department:
+    query += f" AND department = '{department}'"
+
+data = frappe.db.sql(query, as_dict=True)

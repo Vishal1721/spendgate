@@ -207,3 +207,28 @@ def get_budget_status(budget):
         "remaining":remaining
     }
 
+
+
+#rate limit
+@frappe.whitelist(allow_guest=True)
+def public_budget_status():
+    ip = frappe.local.request_ip
+    cache_key = f"spendgate:rate_limit:{ip}"
+    count = frappe.cache.get_value(cache_key)
+    if count is None:
+        count = 1
+    else:
+        count = int(count)+1
+    
+    frappe.cache.set_value(cache_key,count,expires_in_sec = 20)
+
+    if count > 10:
+        frappe.local.response["type"] = "redirect"
+        frappe.local.response["location"] = "/rate-limited"
+        return
+
+    frappe.respond_as_web_page(
+        "Request Successful",
+        "Hey Man! You didn't Catch yet so enjoy!!",
+        indicator_color="green"
+    )

@@ -60,10 +60,16 @@ class ExpenseClaim(Document):
         self.db_set("status", "Pending Approval")
         frappe.enqueue(
             "spendgate.notification.notify_finance_of_new_claim", 
+            claim_name = self.name,
             queue="default",
             is_async=True,
             now=False,
             job_name=None,
+        )
+        frappe.enqueue(
+            "spendgate.webhook.send_webhook",
+            claim_name=self.name,
+            queue="default",
         )
 
     def on_cancel(self):
@@ -87,4 +93,7 @@ class ExpenseClaim(Document):
 
         if department != self.department:
             frappe.throw("Budget Department Not match to expense claim department")
-    
+
+
+    def before_print(self, print_format=None, doc=None):
+        self.print_summary = (f"{self.employee} - {self.department} - {self.expense_date}")

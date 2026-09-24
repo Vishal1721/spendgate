@@ -15,6 +15,12 @@ after_install = "spendgate.install.py"
 #     }
 # }
 
+scheduler_events = {
+    "daily": [
+        "spendgate.scheduler.check_budget_thresholds"
+    ]
+}
+
 permission_query_conditions = {
     "Expense Claim" : "spendgate.permissions.expense_claim_query"
 }

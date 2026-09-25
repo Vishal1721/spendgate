@@ -96,7 +96,7 @@ def reject_claim(claim,reason):
         frappe.throw("Reason not exists")
     doc = frappe.get_doc('Expense Claim',claim)
     doc.status = "Rejected"
-    # doc.rejection_reason = reason
+    doc.rejection_reason = reason
     doc.docstatus = 2
     doc.save()
     frappe.db.commit()
@@ -232,3 +232,40 @@ def public_budget_status():
         "Hey Man! You didn't Catch yet so enjoy!!",
         indicator_color="green"
     )
+
+# //Rest API For expense claim
+@frappe.whitelist()
+def get_budget():
+    budget_name = frappe.form_dict.get("budget_name")
+
+    if not budget_name or not frappe.db.exists("Budget", budget_name):
+        frappe.local.response["http_status_code"] = 404
+        return {"error": "Not found"}
+
+    allocated = frappe.db.get_value("Budget",budget_name,"total_allocated")
+
+    spent = frappe.db.sql(
+            """
+            SELECT COALESCE(SUM(total_amount), 0)
+            FROM `tabExpense Claim`
+            WHERE budget = %s
+              AND docstatus = 1
+            """,
+            (budget_name,)
+        )[0][0]
+        
+
+    remaining = allocated - spent
+
+    utilization_percent = ((spent / allocated) * 100)
+
+    return {
+        "allocated": allocated,
+        "spent": spent,
+        "remaining": remaining,
+        "utilization_percent": utilization_percent
+    }
+    
+#curl -G "http://localhost:8007/api/method/spendgate.api.get_budget"   -H "Authorization: token 022c14c561404bf:aae27041bfa76ab"   --data-urlencode "budget_name=BUD-2026-0001"
+
+#http://localhost:8007/api/method/spendgate.api.get_budget?budget_name=BUD-2026-0001
